@@ -1,0 +1,9 @@
+**
+!reverse_boolean.py
+!platform/
+platform/*
+!platform/backend/
+platform/backend/*
+!platform/backend/requirements.txt
+!platform/backend/app/
+!platform/backend/app/**

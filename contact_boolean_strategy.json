@@ -1,0 +1,232 @@
+{
+  "summary": "Resolved with high confidence. Carlo Khatchi is the founder/principal and president-level owner of a small, privately held Oakland residential construction and structural-repair company serving the Greater Bay Area. Public sources conflict on employee and revenue estimates, so broad ranges are used.",
+  "contacts": [
+    {
+      "input": {
+        "name": "Carlo Khatchi",
+        "company": "Montclair Construction",
+        "location": "Oakland CA",
+        "website": "https://web.montclairconstruction.com/"
+      },
+      "resolution": {
+        "resolved": true,
+        "resolved_person": "Carlo Khatchi",
+        "resolved_company": "Montclair Construction & Structural, Inc.",
+        "resolved_company_website": "https://www.montclairconstruction.com/",
+        "confidence": 0.98,
+        "ambiguity_note": "Multiple public LinkedIn profiles exist for Carlo Khatchi, but the Oakland location and matching company identify the contact confidently."
+      },
+      "person_profile": {
+        "current_title": "Founder and Principal; President",
+        "function": "Ownership, executive management, construction operations, project management",
+        "management_level": "Owner/Executive",
+        "sales_navigator_seniority": [
+          "Owner",
+          "CXO",
+          "President"
+        ],
+        "confidence": 0.98,
+        "basis": "The company website identifies Carlo Khatchi as founder and principal; BBB identifies him as president. A third-party directory lists him as CEO.",
+        "evidence": [
+          {
+            "claim": "Company website identifies Carlo Khatchi as founder and principal.",
+            "source_url": "https://web.montclairconstruction.com/about-us-9214"
+          },
+          {
+            "claim": "BBB identifies Carlo Khatchi as president and principal contact.",
+            "source_url": "https://www.bbb.org/us/ca/oakland/profile/building-contractors/montclair-construction-structural-inc-1116-11144"
+          },
+          {
+            "claim": "Public LinkedIn results associate Carlo Khatchi with Montclair Construction & Structural, Inc. in Oakland.",
+            "source_url": "https://www.linkedin.com/in/carlo-khatchi-226b144a"
+          }
+        ]
+      },
+      "company_profile": {
+        "industry": "Construction",
+        "niche_terms": [
+          "Residential construction",
+          "Custom home building",
+          "Home remodeling",
+          "Foundation repair",
+          "Structural repair",
+          "Seismic retrofitting",
+          "Drainage and waterproofing",
+          "Hillside stabilization",
+          "Design-build"
+        ],
+        "headquarters_or_service_area": "Oakland, California; Greater San Francisco Bay Area",
+        "employee_estimate": {
+          "low": 10,
+          "high": 25,
+          "best_guess": 20,
+          "linkedin_headcount_band": "11-50",
+          "confidence": "Medium",
+          "basis": "LinkedIn lists the company in the 11-50 employee band, while BBB reports 20 employees. The company website also references estimators and skilled trades personnel."
+        },
+        "revenue_estimate": {
+          "low_usd": 1000000,
+          "high_usd": 10000000,
+          "confidence": "Low",
+          "basis": "D&B reports approximately $1.43 million in annual revenue, while another directory estimates $5-10 million. The broad range reflects conflicting third-party estimates and the company's small residential-contractor scale.",
+          "is_publicly_reported": false
+        },
+        "evidence": [
+          {
+            "claim": "The company provides residential construction, remodeling, foundation, structural, drainage, and related services.",
+            "source_url": "https://web.montclairconstruction.com/"
+          },
+          {
+            "claim": "The company has served Oakland and the Bay Area since 1983.",
+            "source_url": "https://web.montclairconstruction.com/about-us-9214"
+          },
+          {
+            "claim": "LinkedIn lists the company as Construction, headquartered in Oakland, with 11-50 employees.",
+            "source_url": "https://www.linkedin.com/company/montclair-construction"
+          },
+          {
+            "claim": "BBB reports 20 employees and identifies the entity as a corporation.",
+            "source_url": "https://www.bbb.org/us/ca/oakland/profile/building-contractors/montclair-construction-structural-inc-1116-11144"
+          },
+          {
+            "claim": "D&B reports approximately $1.43 million in annual revenue and identifies the business with single-family housing construction.",
+            "source_url": "https://www.dandb.com/businessdirectory/montclairconstructionstructuralinc-oakland-ca-20508735.html"
+          }
+        ]
+      },
+      "validation_search": {
+        "title_boolean": "\"Owner\" OR \"Founder\" OR \"President\" OR \"Principal\" OR \"CEO\"",
+        "keyword_boolean": "(construction OR contractor OR remodeling OR \"design build\") AND (residential OR homebuilding OR foundation OR structural OR seismic)",
+        "lead_filters": {
+          "company_headcount": [
+            "11-50"
+          ],
+          "company_type": [
+            "Privately Held"
+          ],
+          "function": [
+            "Entrepreneurship",
+            "Operations",
+            "Project Management"
+          ],
+          "seniority": [
+            "Owner",
+            "CXO"
+          ],
+          "geography": [
+            "Oakland, California",
+            "San Francisco Bay Area"
+          ],
+          "industry": [
+            "Construction"
+          ]
+        },
+        "account_filters": {
+          "headquarters_location": [
+            "Oakland, California",
+            "San Francisco Bay Area"
+          ],
+          "industry": [
+            "Construction"
+          ],
+          "company_headcount": [
+            "11-50"
+          ],
+          "annual_revenue_min_usd": 1000000,
+          "annual_revenue_max_usd": 10000000
+        },
+        "why_it_should_rediscover_anchor": [
+          "Targets owner-level leaders rather than rank-and-file construction personnel.",
+          "Matches the anchor's small-company scale and privately held structure.",
+          "Combines residential construction with foundation, structural, remodeling, and design-build terminology.",
+          "Uses Oakland and the Greater Bay Area, where the anchor is publicly associated."
+        ],
+        "expected_anchor": "Carlo Khatchi - Montclair Construction & Structural, Inc."
+      },
+      "expansion_search": {
+        "title_boolean": "\"Owner\" OR \"Founder\" OR \"President\" OR \"Principal\" OR \"CEO\" OR \"Managing Director\"",
+        "keyword_boolean": "(construction OR contractor OR remodeling OR \"design build\" OR homebuilder) AND (residential OR renovation OR foundation OR structural OR seismic OR restoration)",
+        "lead_filters": {
+          "company_headcount": [
+            "2-10",
+            "11-50"
+          ],
+          "company_type": [
+            "Privately Held",
+            "Partnership"
+          ],
+          "function": [
+            "Entrepreneurship",
+            "Operations",
+            "Project Management",
+            "Business Development"
+          ],
+          "seniority": [
+            "Owner",
+            "CXO",
+            "VP"
+          ],
+          "geography": [
+            "San Francisco Bay Area",
+            "Northern California",
+            "Sacramento metropolitan area"
+          ],
+          "industry": [
+            "Construction",
+            "Building Materials",
+            "Architecture & Planning"
+          ]
+        },
+        "account_filters": {
+          "headquarters_location": [
+            "Northern California",
+            "San Francisco Bay Area",
+            "Sacramento metropolitan area"
+          ],
+          "industry": [
+            "Construction"
+          ],
+          "company_headcount": [
+            "2-10",
+            "11-50"
+          ],
+          "annual_revenue_min_usd": null,
+          "annual_revenue_max_usd": null
+        },
+        "what_was_broadened": [
+          "Expanded geography beyond Oakland and the immediate Bay Area.",
+          "Added adjacent owner titles and neighboring small-company headcount bands.",
+          "Added related residential renovation, restoration, and homebuilder keywords."
+        ],
+        "likely_false_positives": [
+          "Large commercial general-contractor executives.",
+          "Architects and designers without construction ownership or operating responsibility.",
+          "Construction recruiters and staffing consultants.",
+          "Residential subcontractors or individual tradespeople without executive authority."
+        ]
+      }
+    }
+  ],
+  "combined_strategy": {
+    "available": false,
+    "shared_buyer_pattern": null,
+    "archetypes": []
+  },
+  "human_validation_steps": [
+    "Run the validation search without using the person's or company's name.",
+    "Confirm whether a result shows Oakland or the San Francisco Bay Area and an owner, founder, president, principal, or CEO title.",
+    "Check that the company appears residential, remodeling, foundation, structural, or design-build oriented.",
+    "Verify that the company is privately held and approximately 2-50 employees.",
+    "Use the surrounding matching results to build the lookalike prospect list, excluding technicians, recruiters, and unrelated commercial contractors."
+  ],
+  "meta": {
+    "generated_at": "2026-08-31T15:10:42.455725+00:00",
+    "model": "gpt-5.6-luna",
+    "web_research_enabled": true,
+    "input_contact_count": 1,
+    "loaded_from_cache": false
+  },
+  "validation_warnings": [
+    "Contact #1 validation_search leaks anchor identifiers into search criteria: carlo khatchi, montclair construction. Remove them before Sales Navigator use."
+  ]
+}

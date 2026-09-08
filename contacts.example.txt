@@ -1,0 +1,3 @@
+# Person Name | Company | optional location | optional website
+John Doe | ABC HVAC | Atlanta, GA | https://example.com
+Jane Smith | Southern Heating & Air | Charlotte, NC |
