@@ -18,6 +18,25 @@ outcomes are stored in `backend/data/reverse_boolean.db`.
 
 The backend reads the existing project-root `.env` file.
 
+### macOS / Linux
+
+From the **project root**, start these in separate terminals:
+
+```bash
+bash start_backend.sh
+```
+
+```bash
+bash start_frontend.sh
+```
+
+Requires Python 3.11+ and Node.js 22+. The launchers install dependencies and
+the backend creates `.env` if needed. Add your `OPENAI_API_KEY` to that file
+and restart the backend before running research. See the root README for
+Mac installation and Windows migration notes.
+
+### Windows
+
 Backend terminal:
 
 ```powershell

@@ -43,6 +43,61 @@ The program separates:
 
 LinkedIn currently supports company headcount as a Lead filter. Annual Revenue is an Account filter, so the tool does not pretend revenue can be pasted into a Lead Boolean query.
 
+## Setup on macOS
+
+The web app needs Python 3.11+ and Node.js 22+ (Node 24 matches the Docker
+configuration). If either is missing, install it with Homebrew:
+
+```bash
+brew install python@3.12  # only if Python 3.11+ is missing
+brew install node@24     # only if Node 22+ is missing
+```
+
+From this project folder, run the web app in two Terminal tabs:
+
+```bash
+# Terminal 1
+bash start_backend.sh
+```
+
+```bash
+# Terminal 2
+bash start_frontend.sh
+```
+
+Open <http://localhost:3000>. The backend launcher creates the project-root
+`.env` if missing; add `OPENAI_API_KEY` there and restart the backend before
+running research. API docs are at <http://127.0.0.1:8000/docs>.
+
+For the original console app:
+
+```bash
+bash run_mac.sh
+# Or select a specific input:
+bash run_mac.sh --contacts contacts.example.txt
+```
+
+With no arguments, the console launcher prefers `contacts_filled.xlsx`, then
+`contacts.xlsx`, then interactive entry. Explicit arguments are passed directly
+to the console app. Relative input/output paths are resolved from this project
+folder. Use `.venv/bin/python` for the direct Python examples below on macOS.
+
+The launchers install dependencies automatically. The frontend uses the exact
+pnpm version in `package.json` and the committed lockfile through `npx`; no
+global pnpm installation is needed. Initial setup requires internet access.
+Stop each server with Ctrl+C.
+
+When moving from Windows, copy source files, `.env`, and any needed data, but
+recreate `.venv`, `platform/backend/.venv`, `platform/frontend/node_modules`,
+and `platform/frontend/.next` on the Mac. These contain platform-specific files.
+Move old environments/build folders aside before launching. Saved web-app runs
+live in `platform/backend/data`; preserve that folder if you need your history.
+The existing `.bat` files remain available for Windows.
+
+The scripts in `outputs/excel_contact_input` are workbook-generation utilities
+that depend on the separate `@oai/artifact-tool` environment. They are not
+required to run the app or import the included Excel workbooks.
+
 ## Setup on Windows
 
 1. Install Python 3.11+.
