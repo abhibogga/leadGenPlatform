@@ -12,10 +12,13 @@ from fastapi import FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from .models import (
+    ContactImportResponse,
+    ContactInput,
     CreateRunRequest,
     FeedbackRecord,
     FeedbackRequest,
     HealthResponse,
+    ImportWarning,
     RunAccepted,
     RunRecord,
     RunSummary,
@@ -82,6 +85,13 @@ def execute_run(run_id: str, request: CreateRunRequest) -> None:
                 company=contact.company,
                 location=contact.location,
                 website=contact.website,
+                known_title=contact.known_title,
+                service_purchased=contact.service_purchased,
+                success_score=contact.success_score,
+                repeat_client=contact.repeat_client,
+                approx_deal_value=contact.approx_deal_value,
+                why_successful=contact.why_successful,
+                notes=contact.notes,
             )
             for contact in request.contacts
         ]
@@ -162,10 +172,80 @@ def create_feedback(run_id: str, request: FeedbackRequest) -> FeedbackRecord:
     return FeedbackRecord.model_validate(record)
 
 
-@app.post("/api/contacts/import", response_model=list[dict[str, str]])
+def build_import_response(contacts: list[KnownContact]) -> ContactImportResponse:
+    imported = [ContactInput.model_validate(contact.compact()) for contact in contacts]
+    warnings: list[ImportWarning] = []
+    seen: dict[tuple[str, str], int] = {}
+    ready = 0
+
+    for index, contact in enumerate(imported):
+        label = contact.name or f"Row {index + 2}"
+        identity_ready = bool(contact.location or contact.website)
+        success_ready = any(
+            value is not None and value != ""
+            for value in (
+                contact.service_purchased,
+                contact.success_score,
+                contact.repeat_client,
+                contact.approx_deal_value,
+                contact.why_successful,
+            )
+        )
+        if not identity_ready:
+            warnings.append(
+                ImportWarning(
+                    contact_index=index,
+                    contact_name=label,
+                    message="Add a location or website to reduce identity mismatches.",
+                )
+            )
+        elif contact.location and "," not in contact.location and not contact.website:
+            warnings.append(
+                ImportWarning(
+                    contact_index=index,
+                    contact_name=label,
+                    message="Location should include a state, such as 'Joplin, MO'.",
+                )
+            )
+            identity_ready = False
+        if not success_ready:
+            warnings.append(
+                ImportWarning(
+                    contact_index=index,
+                    contact_name=label,
+                    message="Add a service, success score, deal value, repeat status, or success reason.",
+                )
+            )
+
+        key = (contact.name.casefold(), contact.company.casefold())
+        duplicate = key in seen
+        if duplicate:
+            warnings.append(
+                ImportWarning(
+                    contact_index=index,
+                    contact_name=label,
+                    message=f"Possible duplicate of row {seen[key] + 2}.",
+                )
+            )
+        else:
+            seen[key] = index
+
+        if identity_ready and success_ready and not duplicate:
+            ready += 1
+
+    return ContactImportResponse(
+        contacts=imported,
+        total=len(imported),
+        ready=ready,
+        needs_review=len(imported) - ready,
+        warnings=warnings,
+    )
+
+
+@app.post("/api/contacts/import", response_model=ContactImportResponse)
 async def import_contacts(
     workbook: Annotated[UploadFile, File(description="An .xlsx contact workbook")],
-) -> list[dict[str, str]]:
+) -> ContactImportResponse:
     if not workbook.filename or not workbook.filename.lower().endswith(".xlsx"):
         raise HTTPException(status_code=400, detail="Upload an .xlsx workbook")
 
@@ -179,7 +259,7 @@ async def import_contacts(
             handle.write(contents)
             temp_path = Path(handle.name)
         contacts = load_excel_contacts(temp_path)
-        return [contact.compact() for contact in contacts]
+        return build_import_response(contacts)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     finally:

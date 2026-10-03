@@ -8,6 +8,25 @@ type Contact = {
   company: string;
   location: string;
   website: string;
+  known_title: string;
+  service_purchased: string;
+  success_score: string;
+  repeat_client: "" | "yes" | "no" | "unknown";
+  approx_deal_value: string;
+  why_successful: string;
+  notes: string;
+};
+
+type ImportResponse = {
+  contacts: Array<Partial<Omit<Contact, "repeat_client" | "approx_deal_value" | "success_score">> & {
+    repeat_client?: boolean | null;
+    approx_deal_value?: number | null;
+    success_score?: number | null;
+  }>;
+  total: number;
+  ready: number;
+  needs_review: number;
+  warnings: Array<{ contact_index: number; contact_name: string; message: string }>;
 };
 
 type Evidence = { claim?: string; source_url?: string | null };
@@ -87,6 +106,7 @@ type StrategyResult = {
     web_research_enabled?: boolean;
     input_contact_count?: number;
     loaded_from_cache?: boolean;
+    usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number };
   };
 };
 
@@ -107,7 +127,19 @@ type Health = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 
-const emptyContact = (): Contact => ({ name: "", company: "", location: "", website: "" });
+const emptyContact = (): Contact => ({
+  name: "",
+  company: "",
+  location: "",
+  website: "",
+  known_title: "",
+  service_purchased: "",
+  success_score: "",
+  repeat_client: "",
+  approx_deal_value: "",
+  why_successful: "",
+  notes: "",
+});
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
@@ -275,6 +307,7 @@ export default function Home() {
   const [runId, setRunId] = useState<string | null>(null);
   const [run, setRun] = useState<RunRecord | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importSummary, setImportSummary] = useState<ImportResponse | null>(null);
   const [activeContact, setActiveContact] = useState(0);
   const [feedbackState, setFeedbackState] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -322,6 +355,13 @@ export default function Home() {
       company: contact.company.trim(),
       location: contact.location.trim() || null,
       website: contact.website.trim() || null,
+      known_title: contact.known_title.trim() || null,
+      service_purchased: contact.service_purchased.trim() || null,
+      success_score: contact.success_score ? Number(contact.success_score) : null,
+      repeat_client: contact.repeat_client === "yes" ? true : contact.repeat_client === "no" ? false : null,
+      approx_deal_value: contact.approx_deal_value ? Number(contact.approx_deal_value) : null,
+      why_successful: contact.why_successful.trim() || null,
+      notes: contact.notes.trim() || null,
     }));
     if (prepared.some((contact) => !contact.name || !contact.company)) {
       setError("Every buyer needs both a person name and company.");
@@ -356,14 +396,22 @@ export default function Home() {
     const form = new FormData();
     form.append("workbook", workbook);
     try {
-      const imported = await requestJson<Array<Partial<Contact>>>(`${API_URL}/api/contacts/import`, { method: "POST", body: form });
-      if (!imported.length) throw new Error("The workbook did not contain any contact rows.");
-      setContacts(imported.map((contact) => ({
+      const imported = await requestJson<ImportResponse>(`${API_URL}/api/contacts/import`, { method: "POST", body: form });
+      if (!imported.contacts.length) throw new Error("The workbook did not contain any contact rows.");
+      setContacts(imported.contacts.map((contact) => ({
         name: contact.name ?? "",
         company: contact.company ?? "",
         location: contact.location ?? "",
         website: contact.website ?? "",
+        known_title: contact.known_title ?? "",
+        service_purchased: contact.service_purchased ?? "",
+        success_score: contact.success_score?.toString() ?? "",
+        repeat_client: contact.repeat_client === true ? "yes" : contact.repeat_client === false ? "no" : "",
+        approx_deal_value: contact.approx_deal_value?.toString() ?? "",
+        why_successful: contact.why_successful ?? "",
+        notes: contact.notes ?? "",
       })));
+      setImportSummary(imported);
     } catch (importError) {
       setError(importError instanceof Error ? importError.message : "Could not import the workbook");
     } finally {
@@ -438,6 +486,18 @@ export default function Home() {
             </>
           </div>
 
+          {importSummary ? (
+            <div className="import-preview" role="status">
+              <div>
+                <strong>{importSummary.total} client{importSummary.total === 1 ? "" : "s"} imported</strong>
+                <span>{importSummary.ready} ready · {importSummary.needs_review} need review</span>
+              </div>
+              {importSummary.warnings.length ? (
+                <ul>{importSummary.warnings.map((warning, index) => <li key={`${warning.contact_index}-${index}`}><strong>{warning.contact_name}:</strong> {warning.message}</li>)}</ul>
+              ) : <p>Every imported client has identity and success context.</p>}
+            </div>
+          ) : null}
+
           <label className="field-block">
             <span>Agency context</span>
             <textarea value={agencyContext} onChange={(event) => setAgencyContext(event.target.value)} placeholder="We sell AI lead follow-up systems to residential HVAC contractors…" rows={3} />
@@ -458,6 +518,18 @@ export default function Home() {
                   <label><span>Company</span><input value={contact.company} onChange={(event) => updateContact(index, "company", event.target.value)} placeholder="Southern Heating" /></label>
                   <label><span>Location <em>optional</em></span><input value={contact.location} onChange={(event) => updateContact(index, "location", event.target.value)} placeholder="Charlotte, NC" /></label>
                   <label><span>Website <em>optional</em></span><input value={contact.website} onChange={(event) => updateContact(index, "website", event.target.value)} placeholder="company.com" /></label>
+                  <details className="success-details">
+                    <summary>Success details <span>Improve weighting and pattern quality</span></summary>
+                    <div className="success-fields">
+                      <label><span>Known title <em>optional</em></span><input value={contact.known_title} onChange={(event) => updateContact(index, "known_title", event.target.value)} placeholder="Owner" /></label>
+                      <label><span>Service purchased <em>optional</em></span><input value={contact.service_purchased} onChange={(event) => updateContact(index, "service_purchased", event.target.value)} placeholder="Lead follow-up system" /></label>
+                      <label><span>Success score <em>1–5</em></span><select value={contact.success_score} onChange={(event) => updateContact(index, "success_score", event.target.value)}><option value="">Unknown</option><option value="1">1 · Poor fit</option><option value="2">2</option><option value="3">3 · Solid</option><option value="4">4</option><option value="5">5 · Ideal</option></select></label>
+                      <label><span>Repeat client <em>optional</em></span><select value={contact.repeat_client} onChange={(event) => updateContact(index, "repeat_client", event.target.value)}><option value="">Unknown</option><option value="yes">Yes</option><option value="no">No</option></select></label>
+                      <label><span>Approx. deal value <em>optional</em></span><input type="number" min="0" step="100" value={contact.approx_deal_value} onChange={(event) => updateContact(index, "approx_deal_value", event.target.value)} placeholder="5000" /></label>
+                      <label className="wide-field"><span>Why successful <em>optional</em></span><textarea value={contact.why_successful} onChange={(event) => updateContact(index, "why_successful", event.target.value)} placeholder="Repeat work, strong margin, quick close…" rows={2} /></label>
+                      <label className="wide-field"><span>Notes <em>optional</em></span><textarea value={contact.notes} onChange={(event) => updateContact(index, "notes", event.target.value)} placeholder="Corrections or relevant context" rows={2} /></label>
+                    </div>
+                  </details>
                 </div>
                 <button className="remove-button" type="button" aria-label={`Remove buyer ${index + 1}`} onClick={() => removeContact(index)}>×</button>
               </div>
@@ -502,7 +574,7 @@ export default function Home() {
         <section className="results-section">
           <header className="results-header">
             <div><p className="eyebrow">Research complete</p><h2>{result.summary || "Your buyer strategy is ready."}</h2></div>
-            <div className="results-actions"><span>{result.meta?.loaded_from_cache ? "Loaded from cache" : "Fresh analysis"}</span><button type="button" onClick={downloadResult}>Download JSON</button></div>
+            <div className="results-actions"><span>{result.meta?.loaded_from_cache ? "Loaded from cache" : "Fresh analysis"}{result.meta?.usage?.total_tokens ? ` · ${result.meta.usage.total_tokens.toLocaleString()} tokens` : ""}</span><button type="button" onClick={downloadResult}>Download JSON</button></div>
           </header>
 
           {(result.validation_warnings?.length ?? 0) > 0 ? <div className="warning-card"><strong>Review before using</strong><ul>{result.validation_warnings?.map((warning) => <li key={warning}>{warning}</li>)}</ul></div> : null}

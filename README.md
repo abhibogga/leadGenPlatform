@@ -117,7 +117,11 @@ OPENAI_API_KEY=your_key_here
 Open `contacts.xlsx`, add one contact per row, save it, and double-click
 `run_windows.bat`. The runner automatically imports the workbook. The required
 columns are **Person Name** and **Company**; **Location** and **Website** are
-optional. Blank rows are ignored.
+optional identity fields. The application also accepts **Known Title**,
+**Service Purchased**, **Success Score (1-5)**, **Repeat Client**,
+**Approx. Deal Value**, **Why Successful**, and **Notes**. These success fields
+help the model weight ideal and repeat customers instead of treating every row
+as equally valuable. Blank rows and unknown optional values are ignored.
 
 You can also choose another workbook from the command line:
 
@@ -300,6 +304,12 @@ result = engine.generate([
         company="ABC HVAC",
         location="Atlanta, GA",
         website="https://abchvac.example",
+        known_title="President",
+        service_purchased="Lead follow-up system",
+        success_score=5,
+        repeat_client=True,
+        approx_deal_value=12_000,
+        why_successful="Renewed twice and referred two customers",
     )
 ])
 ```

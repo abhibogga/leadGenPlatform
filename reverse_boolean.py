@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -37,8 +38,15 @@ class KnownContact:
     company: str
     location: str | None = None
     website: str | None = None
+    known_title: str | None = None
+    service_purchased: str | None = None
+    success_score: int | None = None
+    repeat_client: bool | None = None
+    approx_deal_value: float | None = None
+    why_successful: str | None = None
+    notes: str | None = None
 
-    def compact(self) -> dict[str, str]:
+    def compact(self) -> dict[str, Any]:
         out = {
             "name": self.name.strip(),
             "company": self.company.strip(),
@@ -47,6 +55,20 @@ class KnownContact:
             out["location"] = self.location.strip()
         if self.website:
             out["website"] = self.website.strip()
+        if self.known_title:
+            out["known_title"] = self.known_title.strip()
+        if self.service_purchased:
+            out["service_purchased"] = self.service_purchased.strip()
+        if self.success_score is not None:
+            out["success_score"] = self.success_score
+        if self.repeat_client is not None:
+            out["repeat_client"] = self.repeat_client
+        if self.approx_deal_value is not None:
+            out["approx_deal_value"] = self.approx_deal_value
+        if self.why_successful:
+            out["why_successful"] = self.why_successful.strip()
+        if self.notes:
+            out["notes"] = self.notes.strip()
         return out
 
 
@@ -76,6 +98,19 @@ RESEARCH RULES
 - If evidence conflicts, report the conflict and lower confidence.
 - Every important observed fact or estimate should include a short basis and,
   when available, source URLs in the evidence list.
+
+CUSTOMER SUCCESS CONTEXT
+- Treat known_title, service_purchased, success_score, repeat_client,
+  approx_deal_value, why_successful, and notes as user-supplied facts. Do not
+  web-search these fields or overwrite them with guesses.
+- Use success_score as a 1-5 fit signal when present. Give stronger weight to
+  high-scoring and repeat clients when finding shared buyer patterns.
+- Deal value is supporting context, not proof that a customer is ideal. Avoid
+  letting one large deal overwhelm repeated fit signals across the group.
+- The reason a client was successful and the service purchased are primary
+  evidence for distinguishing useful buying patterns from surface similarity.
+- Missing success fields mean unknown, not negative. State when the supplied
+  success context is too sparse to support a strong conclusion.
 
 PERSON PROFILE
 For each resolved contact determine:
@@ -145,7 +180,14 @@ Return ONLY valid JSON with this shape. Use null where unknown:
         "name": "...",
         "company": "...",
         "location": "... or null",
-        "website": "... or null"
+        "website": "... or null",
+        "known_title": "... or null",
+        "service_purchased": "... or null",
+        "success_score": null,
+        "repeat_client": null,
+        "approx_deal_value": null,
+        "why_successful": "... or null",
+        "notes": "... or null"
       },
       "resolution": {
         "resolved": true,
@@ -352,7 +394,8 @@ def _casefold_text(value: Any) -> str:
 
 def _search_contains_anchor(search: dict[str, Any], contact: KnownContact) -> list[str]:
     """Check generated query/filter text for accidental anchor leakage."""
-    serialized = json.dumps(search, ensure_ascii=False).casefold()
+    searchable = {key: value for key, value in search.items() if key != "expected_anchor"}
+    serialized = json.dumps(searchable, ensure_ascii=False).casefold()
     leaks: list[str] = []
     forbidden = [contact.name.strip(), contact.company.strip()]
     if contact.website:
@@ -473,7 +516,7 @@ class ContactReverseSearchEngine:
             "model": self.model,
             "use_web": self.use_web,
             "search_context_size": self.search_context_size,
-            "prompt_version": 2,
+            "prompt_version": 3,
         }
         raw = json.dumps(payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
         return hashlib.sha256(raw).hexdigest()
@@ -538,12 +581,22 @@ class ContactReverseSearchEngine:
 
         response = self.client.responses.create(**kwargs)
         result = extract_json(response.output_text)
+        usage = getattr(response, "usage", None)
+        if usage is not None and hasattr(usage, "model_dump"):
+            usage = usage.model_dump(exclude_none=True)
+        elif usage is not None:
+            usage = {
+                key: getattr(usage, key)
+                for key in ("input_tokens", "output_tokens", "total_tokens")
+                if getattr(usage, key, None) is not None
+            }
         result["meta"] = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "model": self.model,
             "web_research_enabled": self.use_web,
             "input_contact_count": len(contacts),
             "loaded_from_cache": False,
+            "usage": usage,
         }
         result["validation_warnings"] = validate_result(result, contacts)
 
@@ -557,8 +610,49 @@ class ContactReverseSearchEngine:
 ReverseBooleanEngine = ContactReverseSearchEngine
 
 
+def _parse_optional_score(value: Any) -> int | None:
+    if value is None or str(value).strip() == "":
+        return None
+    try:
+        numeric = float(str(value).strip())
+    except ValueError as exc:
+        raise ValueError("Success Score must be a number from 1 to 5") from exc
+    if not numeric.is_integer():
+        raise ValueError("Success Score must be a whole number from 1 to 5")
+    score = int(numeric)
+    if score < 1 or score > 5:
+        raise ValueError("Success Score must be between 1 and 5")
+    return score
+
+
+def _parse_optional_bool(value: Any) -> bool | None:
+    if value is None or str(value).strip() == "":
+        return None
+    normalized = str(value).strip().casefold()
+    if normalized in {"yes", "y", "true", "1", "repeat"}:
+        return True
+    if normalized in {"no", "n", "false", "0", "one-time", "one time"}:
+        return False
+    if normalized in {"unknown", "unsure", "n/a", "na"}:
+        return None
+    raise ValueError("Repeat Client must be Yes, No, or Unknown")
+
+
+def _parse_optional_money(value: Any) -> float | None:
+    if value is None or str(value).strip() == "":
+        return None
+    cleaned = re.sub(r"[$,\s]", "", str(value))
+    try:
+        amount = float(cleaned)
+    except ValueError as exc:
+        raise ValueError("Approx. Deal Value must be a non-negative number") from exc
+    if not math.isfinite(amount) or amount < 0:
+        raise ValueError("Approx. Deal Value must be a non-negative number")
+    return amount
+
+
 def parse_contact_line(line: str) -> KnownContact | None:
-    """Accept: Person | Company | optional location | optional website."""
+    """Accept pipe-delimited identity fields followed by optional success context."""
     line = line.strip()
     if not line or line.startswith("#"):
         return None
@@ -567,11 +661,21 @@ def parse_contact_line(line: str) -> KnownContact | None:
         raise ValueError(
             "Each line must contain at least: Person Name | Company Name"
         )
+    success_score = _parse_optional_score(parts[6] if len(parts) > 6 else None)
+    repeat_client = _parse_optional_bool(parts[7] if len(parts) > 7 else None)
+    deal_value = _parse_optional_money(parts[8] if len(parts) > 8 else None)
     return KnownContact(
         name=parts[0],
         company=parts[1],
         location=parts[2] if len(parts) > 2 and parts[2] else None,
         website=parts[3] if len(parts) > 3 and parts[3] else None,
+        known_title=parts[4] if len(parts) > 4 and parts[4] else None,
+        service_purchased=parts[5] if len(parts) > 5 and parts[5] else None,
+        success_score=success_score,
+        repeat_client=repeat_client,
+        approx_deal_value=deal_value,
+        why_successful=parts[9] if len(parts) > 9 and parts[9] else None,
+        notes=parts[10] if len(parts) > 10 and parts[10] else None,
     )
 
 
@@ -615,6 +719,17 @@ def load_excel_contacts(path: Path) -> list[KnownContact]:
             "company": {"company", "companyname", "organization", "organisation"},
             "location": {"location", "citystate", "geography"},
             "website": {"website", "companywebsite", "url", "domain"},
+            "known_title": {"knowntitle", "title", "jobtitle", "currenttitle"},
+            "service_purchased": {
+                "servicepurchased", "purchasedservice", "service", "engagement"
+            },
+            "success_score": {"successscore", "successscore15", "fitscore"},
+            "repeat_client": {"repeatclient", "repeatcustomer", "repeat"},
+            "approx_deal_value": {
+                "approxdealvalue", "dealvalue", "contractvalue", "value"
+            },
+            "why_successful": {"whysuccessful", "successreason", "whyitworked"},
+            "notes": {"notes", "context", "comments"},
         }
         normalized = [normalize_header(value) for value in header_row]
         columns: dict[str, int] = {}
@@ -646,12 +761,25 @@ def load_excel_contacts(path: Path) -> list[KnownContact]:
                 raise ValueError(
                     f"{path}:{row_no}: Person Name and Company are both required"
                 )
+            try:
+                success_score = _parse_optional_score(cell(row, "success_score"))
+                repeat_client = _parse_optional_bool(cell(row, "repeat_client"))
+                deal_value = _parse_optional_money(cell(row, "approx_deal_value"))
+            except ValueError as exc:
+                raise ValueError(f"{path}:{row_no}: {exc}") from exc
             contacts.append(
                 KnownContact(
                     name=name,
                     company=company,
                     location=cell(row, "location"),
                     website=cell(row, "website"),
+                    known_title=cell(row, "known_title"),
+                    service_purchased=cell(row, "service_purchased"),
+                    success_score=success_score,
+                    repeat_client=repeat_client,
+                    approx_deal_value=deal_value,
+                    why_successful=cell(row, "why_successful"),
+                    notes=cell(row, "notes"),
                 )
             )
         return contacts

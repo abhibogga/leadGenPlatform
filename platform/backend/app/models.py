@@ -10,6 +10,13 @@ class ContactInput(BaseModel):
     company: str = Field(min_length=1, max_length=200)
     location: str | None = Field(default=None, max_length=200)
     website: str | None = Field(default=None, max_length=500)
+    known_title: str | None = Field(default=None, max_length=200)
+    service_purchased: str | None = Field(default=None, max_length=500)
+    success_score: int | None = Field(default=None, ge=1, le=5)
+    repeat_client: bool | None = None
+    approx_deal_value: float | None = Field(default=None, ge=0)
+    why_successful: str | None = Field(default=None, max_length=2_000)
+    notes: str | None = Field(default=None, max_length=2_000)
 
     @field_validator("name", "company")
     @classmethod
@@ -19,12 +26,33 @@ class ContactInput(BaseModel):
             raise ValueError("must not be blank")
         return value
 
-    @field_validator("location", "website")
+    @field_validator(
+        "location",
+        "website",
+        "known_title",
+        "service_purchased",
+        "why_successful",
+        "notes",
+    )
     @classmethod
     def optional_text_to_none(cls, value: str | None) -> str | None:
         if value is None:
             return None
         return value.strip() or None
+
+
+class ImportWarning(BaseModel):
+    contact_index: int = Field(ge=0)
+    contact_name: str
+    message: str
+
+
+class ContactImportResponse(BaseModel):
+    contacts: list[ContactInput]
+    total: int = Field(ge=0)
+    ready: int = Field(ge=0)
+    needs_review: int = Field(ge=0)
+    warnings: list[ImportWarning]
 
 
 class CreateRunRequest(BaseModel):
